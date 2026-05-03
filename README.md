@@ -11,6 +11,7 @@ A CLI tool to control the LED dot matrix screen on the Flydigi Controller Chargi
 
 - Fill the entire LED screen with a solid color via USB
 - Support for multiple color string formats (CSS color names, hex, RGB, etc.)
+- No need to run Flydigi Space Station (Service); the program sends HID data directly to the device
 
 ## Requirements
 

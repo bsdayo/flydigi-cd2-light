@@ -10,7 +10,7 @@ const TARGET_VID: u16 = 0x37D7;
 const TARGET_PID: u16 = 0x6001;
 pub const LED_COUNT: usize = 162;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Color {
     r: u8,
     g: u8,
@@ -19,11 +19,10 @@ pub struct Color {
 
 impl From<csscolorparser::Color> for Color {
     fn from(value: csscolorparser::Color) -> Self {
-        Self {
-            r: value.r as u8,
-            g: value.g as u8,
-            b: value.b as u8,
-        }
+        let r = (value.r * value.a * 255.0).clamp(0.0, 255.0) as u8;
+        let g = (value.g * value.a * 255.0).clamp(0.0, 255.0) as u8;
+        let b = (value.b * value.a * 255.0).clamp(0.0, 255.0) as u8;
+        Self { r, g, b }
     }
 }
 

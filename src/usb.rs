@@ -1,3 +1,4 @@
+use crate::{Color, Error, LED_COUNT};
 use rusb::DeviceHandle;
 use std::thread;
 use std::time::Duration;
@@ -50,19 +51,35 @@ fn build_data_frame(frame_idx: u16, data: &[u8], is_last: bool) -> [u8; PACKET_S
 /// # Arguments
 ///
 /// * `handle` - An open USB device handle.
-/// * `rgb_data` - Raw RGB values (3 bytes per LED).
+/// * `frames` - 2D array of Color structs. Must contain exactly 1 frame with LED_COUNT LEDs.
 pub fn send_led_data(
     handle: &DeviceHandle<rusb::GlobalContext>,
-    rgb_data: &[u8],
-) -> rusb::Result<()> {
+    frames: &[Vec<Color>],
+) -> Result<(), Error> {
+    if frames.len() != 1 {
+        unimplemented!("multiple frame support is not yet implemented")
+    }
+
+    let leds = &frames[0];
+    if leds.len() != LED_COUNT {
+        return Err(Error::LedCountMismatch {
+            expected: LED_COUNT,
+            actual: leds.len(),
+        });
+    }
+
     let init_packet = build_init_packet();
     handle.write_interrupt(ENDPOINT_OUT, &init_packet, Duration::from_secs(1))?;
     thread::sleep(Duration::from_millis(5));
 
     let first_frame_header = [0x01u8, 0x01, 0x64, 0x03, 0x00, 0x00];
-    let mut all_data = Vec::with_capacity(first_frame_header.len() + rgb_data.len());
+    let mut all_data = Vec::with_capacity(first_frame_header.len() + leds.len() * 3);
     all_data.extend_from_slice(&first_frame_header);
-    all_data.extend_from_slice(rgb_data);
+    for led in leds {
+        all_data.push(led.r);
+        all_data.push(led.g);
+        all_data.push(led.b);
+    }
 
     let total_frames = (all_data.len() + DATA_CHUNK - 1) / DATA_CHUNK;
 

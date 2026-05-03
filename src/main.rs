@@ -1,11 +1,31 @@
 use clap::{Parser, Subcommand};
 use rusb::DeviceHandle;
 
+mod error;
 mod usb;
+
+pub use error::Error;
 
 const TARGET_VID: u16 = 0x37D7;
 const TARGET_PID: u16 = 0x6001;
-const LED_COUNT: usize = 162;
+pub const LED_COUNT: usize = 162;
+
+#[derive(Clone)]
+pub struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+
+impl From<csscolorparser::Color> for Color {
+    fn from(value: csscolorparser::Color) -> Self {
+        Self {
+            r: value.r as u8,
+            g: value.g as u8,
+            b: value.b as u8,
+        }
+    }
+}
 
 #[derive(Parser)]
 #[command(name = "flydigi-cd2-light")]
@@ -49,10 +69,6 @@ fn main() {
                 }
             };
 
-            let r = (c.r * 255.0).clamp(0.0, 255.0) as u8;
-            let g = (c.g * 255.0).clamp(0.0, 255.0) as u8;
-            let b = (c.b * 255.0).clamp(0.0, 255.0) as u8;
-
             let handle = match find_device() {
                 Some(h) => h,
                 None => {
@@ -66,14 +82,9 @@ fn main() {
                 std::process::exit(1);
             }
 
-            let mut data = vec![0u8; LED_COUNT * 3];
-            for i in 0..LED_COUNT {
-                data[i * 3 + 0] = r;
-                data[i * 3 + 1] = g;
-                data[i * 3 + 2] = b;
-            }
-
-            if let Err(e) = usb::send_led_data(&handle, &data) {
+            let colors = vec![c.into(); LED_COUNT];
+            let frames = vec![colors];
+            if let Err(e) = usb::send_led_data(&handle, &frames) {
                 eprintln!("Failed to send LED data: {}", e);
                 std::process::exit(1);
             }

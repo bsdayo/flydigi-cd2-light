@@ -7,3 +7,4 @@ edition = "2024"
 rusb = "0.9.4"
 clap = { version = "4", features = ["derive"] }
 csscolorparser = "0.8"
+thiserror = "2"
